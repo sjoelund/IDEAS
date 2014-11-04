@@ -3,13 +3,11 @@ model SimInfoManager
   "Simulation information manager for handling time and climate data required in each for simulation."
   extends PartialSimInfoManager(final useTmy3Reader = true);
 
-
 equation
   solDirPer=weaDat.cheDirNorRad.HOut;
   solDirHor = weaDat.cheGloHorRad.HOut - solDifHor;
   solDifHor = weaDat.cheDifHorRad.HOut;
   solGloHor = solDirHor + solDifHor;
-  Te = weaDat.cheTemDryBul.TOut;
   TeAv = Te;
   Tground=TdesGround;
   irr = weaDat.cheGloHorRad.HOut;

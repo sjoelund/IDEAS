@@ -46,6 +46,8 @@ partial model PartialSimInfoManager
   final parameter Modelica.SIunits.Temperature TdesGround = 10 + 273.15
     "design ground temperature";
 
+  parameter Boolean use_lin=false
+    "True if the model will be linearized using the Dymola function";
 protected
   final parameter Boolean DST = true
     "boolean to take into account daylight saving time";
@@ -62,13 +64,20 @@ public
   Modelica.SIunits.Irradiance solDifHor
     "difuse irradiation on horizontal surface";
   Modelica.SIunits.Irradiance solGloHor "global irradiation on horizontal";
-  Modelica.SIunits.Temperature Te
+  Modelica.SIunits.Temperature Te = Te_conditional
     "ambient outdoor temperature for determination of sky radiation exchange";
-  Modelica.SIunits.Temperature Tsky "effective overall sky temperature";
+  Modelica.Blocks.Interfaces.RealInput Te_in(unit="K") = Te_conditional if use_lin
+    "ambient outdoor temperature for determination of sky radiation exchange";
+  Modelica.SIunits.Temperature Tsky =  Tsky_conditional
+    "effective overall sky temperature";
+  Modelica.Blocks.Interfaces.RealInput Tsky_in(unit="K") = Tsky_conditional if use_lin
+    "effective overall sky temperature";
   Modelica.SIunits.Temperature TeAv
     "running average of ambient outdoor temperature of the last 5 days, not yet implemented";
   Modelica.SIunits.Temperature Tground "ground temperature";
-  Modelica.SIunits.Velocity Va "air velocity";
+  Modelica.SIunits.Velocity Va = Va_conditional "air velocity";
+  Modelica.Blocks.Interfaces.RealInput Va_in(unit="m/s") = Va_conditional if use_lin
+    "air velocity";
   Real Fc "cloud factor";
   Modelica.SIunits.Irradiance irr "Irradiance";
   Boolean summer;
@@ -81,7 +90,14 @@ public
   Modelica.SIunits.Time timLoc "Local time";
   Modelica.SIunits.Time timSol "Solar time";
   Modelica.SIunits.Time timCal "Calendar time";
+protected
+    Modelica.SIunits.Temperature Te_conditional
+    "ambient outdoor temperature for determination of sky radiation exchange";
+  Modelica.SIunits.Temperature Tsky_conditional
+    "effective overall sky temperature";
+  Modelica.SIunits.Velocity Va_conditional "air velocity";
 
+public
   IDEAS.Climate.Time.SimTimes timMan(
     timZonSta=timZonSta,
     lon=lon,
