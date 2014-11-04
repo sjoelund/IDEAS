@@ -26,10 +26,10 @@ import buildingspy.development.regressiontest as rt
 """
 # os.chdir("E:\work\modelica\IDEAS\IDEAS")
 
-tester=r.Tester(executable='dymola', checkHtml=False)
+tester=r.Tester(executable='dymola')
 
 """ number of parallel processes started."""
-tester.setNumberOfThreads(1)
+tester.setNumberOfThreads(3)
 
 """ Html validation on/off"""
 # tester.validate_html = False

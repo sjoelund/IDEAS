@@ -3,22 +3,6 @@ model SlabOnGround "opaque floor on ground slab"
 
   extends IDEAS.Buildings.Components.Interfaces.StateWallNoSol;
 
-  replaceable Data.Interfaces.Construction constructionType
-    constrainedby Data.Interfaces.Construction(final insulationType=
-        insulationType, final insulationTickness=insulationThickness)
-    "Type of building construction" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,72},{-34,76}})),
-    Dialog(group="Construction details"));
-  replaceable Data.Interfaces.Insulation insulationType
-    constrainedby Data.Interfaces.Insulation(final d=insulationThickness)
-    "Type of thermal insulation" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,84},{-34,88}})),
-    Dialog(group="Construction details"));
-  parameter Modelica.SIunits.Length insulationThickness
-    "Thermal insulation thickness"
-    annotation (Dialog(group="Construction details"));
   parameter Modelica.SIunits.Area AWall "Total wall area";
   parameter Modelica.SIunits.Area PWall "Total wall perimeter";
   parameter Modelica.SIunits.Angle inc
@@ -89,7 +73,7 @@ public
       T_ref=284.15)
     annotation (Placement(transformation(extent={{-70,-40},{-50,-20}})));
 equation
-  periodicFlow.Q_flow = Qm;
+  periodicFlow.Q_flow = -Qm;
 
   connect(layMul.port_b, intCon.port_a) annotation (Line(
       points={{10,-30},{20,-30}},

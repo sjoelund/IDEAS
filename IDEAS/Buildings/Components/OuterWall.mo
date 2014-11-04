@@ -3,23 +3,6 @@ model OuterWall "Opaque building envelope construction"
 
   extends IDEAS.Buildings.Components.Interfaces.StateWallNoSol;
 
-  replaceable Data.Constructions.CavityWall constructionType
-    constrainedby Data.Interfaces.Construction(final insulationType=
-        insulationType, final insulationTickness=insulationThickness)
-    "Type of building construction" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,72},{-34,76}})),
-    Dialog(group="Construction details"));
-
-  replaceable Data.Insulation.Rockwool insulationType constrainedby
-    Data.Interfaces.Insulation(final d=insulationThickness)
-    "Type of thermal insulation" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,84},{-34,88}})),
-    Dialog(group="Construction details"));
-  parameter Modelica.SIunits.Length insulationThickness=0.05
-    "Thermal insulation thickness"
-    annotation (Dialog(group="Construction details"));
   parameter Modelica.SIunits.Area AWall "Total wall area";
   parameter Modelica.SIunits.Angle inc
     "Inclination of the wall, i.e. 90deg denotes vertical";
@@ -31,11 +14,17 @@ model OuterWall "Opaque building envelope construction"
   final parameter Modelica.SIunits.Power QNom=U_value*AWall*(273.15 + 21 - sim.Tdes)
     "Design heat losses at reference outdoor temperature";
 
+  parameter Modelica.SIunits.Temperature T_start=293.15
+    "Start temperature for each of the layers";
+
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a port_emb
     "port for gains by embedded active layers"
     annotation (Placement(transformation(extent={{-10,-110},{10,-90}})));
 
-protected
+  Modelica.SIunits.Power QSolIrr = (radSol.solDir + radSol.solDif)
+    "Total solar irradiance";
+
+  //protected
   IDEAS.Climate.Meteo.Solar.RadSol radSol(
     final inc=inc,
     final azi=azi,
@@ -48,10 +37,10 @@ public
     final inc=inc,
     final nLay=constructionType.nLay,
     final mats=constructionType.mats,
-    final locGain=constructionType.locGain)
+    final locGain=constructionType.locGain,
+    T_start=ones(constructionType.nLay)*T_start)
     "declaration of array of resistances and capacitances for wall simulation"
     annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
-protected
   IDEAS.Buildings.Components.BaseClasses.ExteriorConvection extCon(final A=
         AWall)
     "convective surface heat transimission on the exterior side of the wall"
@@ -74,7 +63,6 @@ public
   Modelica.Blocks.Interfaces.RealInput solDir if sim.use_lin;
   Modelica.Blocks.Interfaces.RealInput solDif if sim.use_lin;
 equation
-
   connect(extCon.port_a, layMul.port_a) annotation (Line(
       points={{-20,-50},{-16,-50},{-16,-30},{-10,-30}},
       color={191,0,0},
@@ -127,7 +115,7 @@ equation
       index=1,
       extent={{6,3},{6,3}}));
   connect(layMul.area, propsBus_a.area) annotation (Line(
-      points={{0,-20},{0,-20},{0,40},{50,40}},
+      points={{0,-20},{0,40},{50,40}},
       color={0,0,127},
       smooth=Smooth.None), Text(
       string="%second",
