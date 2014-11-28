@@ -1,6 +1,7 @@
 within IDEAS.Fluid.HeatExchangers.RadiantSlab;
 model EmbeddedPipe
   "Embedded pipe model based on prEN 15377 and (Koschenz, 2000), water capacity lumped to TOut"
+  import Buildings;
   extends IDEAS.Fluid.HeatExchangers.Interfaces.EmissionTwoPort;
   replaceable parameter
     IDEAS.Fluid.HeatExchangers.RadiantSlab.BaseClasses.RadiantSlabChar RadSlaCha constrainedby
@@ -8,7 +9,9 @@ model EmbeddedPipe
     "Properties of the floor heating or TABS, if present"
     annotation (choicesAllMatching=true);
   extends IDEAS.Fluid.Interfaces.Partials.PartialTwoPort(
-    final m=A_pipe*L_r*rho_default, vol(nPorts=2));
+    final m=A_pipe*L_r*rho_default,
+    vol(nPorts=2),
+    final allowFlowReversal = false);
   extends IDEAS.Fluid.Interfaces.TwoPortFlowResistanceParameters(
     computeFlowResistance=false,
     final dp_nominal=Modelica.Fluid.Pipes.BaseClasses.WallFriction.Detailed.pressureLoss_m_flow(
@@ -44,13 +47,18 @@ annotation(Dialog(tab="Pressure drop"));
     "Number of parallel (equally sized) circuits in the tabs";
   parameter Modelica.SIunits.Area A_floor "Floor/tabs surface area";
 
+  //default 15 kg/hm2 -> simplified eqn
+  parameter Boolean useSimplifiedRt = m_flowMin/A_floor > 0.000416
+    "Use a simplified calculation for Rt"
+    annotation(Evaluate=true);
+  // parameter 1/U1 + 1/U2 from Koschenz
+  parameter Modelica.SIunits.ThermalInsulance R_c = 1/(RadSlaCha.lambda_b/RadSlaCha.S_1 + RadSlaCha.lambda_b/RadSlaCha.S_2)
+    "Specific thermal resistivity of (parallel) slabs connected to top and bottom of tabs"
+    annotation(Dialog(tab="Advanced", group="Thermal"));
+
   // Resistances ////////////////////////////////////////////////////////////////
-  // there is no R_z in the model because the dynamics of the water is explicitly simulated
-  // SI.ThermalResistance R_z "Flowrate dependent thermal resistance of pipe length";
 
   //For high flow rates see [Koshenz, 2000] eqn 4.37
-  //For low or zero mass flow rate an average convective heat transfer coefficient h = 200 for laminar flow is used.
-  //based on [Koshenz, 2000] figure 4.5
   // for laminar flow Nu_D = 4 is assumed: between constant heat flow and constant wall temperature
   Modelica.SIunits.ThermalInsulance R_w_val= Modelica.Fluid.Utilities.regStep(x=rey-(reyHi+reyLo)/2,
     y1=RadSlaCha.T^0.13/8/Modelica.Constants.pi*abs((pipeDiaInt/(m_flowSp*L_r)))^0.87,
@@ -85,18 +93,15 @@ annotation(Dialog(tab="Pressure drop"));
   // specific mass flow rates
   Real m_flowSp(unit="kg/(m2.s)")=port_a.m_flow/A_floor
     "mass flow rate per unit floor area";
+  Real m_flowSpLimit = IDEAS.Utilities.Math.Functions.smoothMax(m_flow_nominal/A_floor/100,m_flowSp, m_flow_nominal/A_floor/100);
+
+  Modelica.SIunits.ThermalInsulance R_t
+    "Total equivalent specific resistivity as defined by Koschenz in eqn 4-59";
 
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_b heatPortEmb
     "Port to the core of a floor heating/concrete activation"
     annotation (Placement(transformation(extent={{-10,90},{10,110}}),
         iconTransformation(extent={{-10,90},{10,110}})));
-
-  Modelica.Blocks.Sources.RealExpression G_w_val(y=A_floor/(R_w_val + R_r_val +
-        R_x_val))
-    "Value of the G_w_val of the convective heat transfer inside pipe"
-    annotation (Placement(transformation(extent={{-92,40},{-22,60}})));
-  Modelica.Thermal.HeatTransfer.Components.Convection R_w
-    annotation (Placement(transformation(extent={{-2,14},{-22,34}})));
 
 protected
   final parameter Modelica.SIunits.Length L_r=A_floor/RadSlaCha.T/nParCir
@@ -109,6 +114,8 @@ protected
   final parameter Modelica.SIunits.Density rho_default = Medium.density(sta_default);
   final parameter Modelica.SIunits.DynamicViscosity mu_default = Medium.dynamicViscosity(sta_default)
     "Dynamic viscosity at nominal condition";
+  final parameter Modelica.SIunits.SpecificHeatCapacity cp_default = Medium.specificHeatCapacityCp(sta_default)
+    "Heat capacity at nominal condition";
   final parameter Modelica.SIunits.MassFlowRate m_flow_nominal_pos = abs(m_flow_nominal)
     "Absolute value of nominal flow rate";
   final parameter Modelica.SIunits.MassFlowRate m_flow_turbulent =  mu_default*pipeDiaInt/4*Modelica.Constants.pi*reyHi
@@ -140,6 +147,21 @@ public
   parameter Boolean linearized = false
     "= true, use linear relation between m_flow and dp for any flow rate"
     annotation(Evaluate=true, Dialog(tab="Advanced"));
+  Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow heatFlowSolid
+    annotation (Placement(transformation(extent={{-40,70},{-20,90}})));
+  Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow heatFlowWater
+    annotation (Placement(transformation(extent={{-40,30},{-20,50}})));
+  Sensors.Temperature senTemIn(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-110,20},{-90,40}})));
+  Modelica.Blocks.Sources.RealExpression Q(y=
+        IDEAS.Utilities.Math.Functions.spliceFunction(
+        x=m_flow - m_flow_nominal/100,
+        pos=(senTemIn.T - heatPortEmb.T)/R_t*A_floor,
+        neg=0,
+        deltax=m_flow_nominal/100))
+    annotation (Placement(transformation(extent={{-100,50},{-72,70}})));
+  Modelica.Blocks.Math.Gain negate(k=-1)
+    annotation (Placement(transformation(extent={{-56,36},{-48,44}})));
 initial equation
    assert(m_flowMin/A_floor*Medium.specificHeatCapacityCp(sta_default)*(R_w_val_min + R_r_val + R_x_val) >= 0.5,
      "Model is not valid for the set nominal and minimal mass flow rate, discretisation in multiple parts is required");
@@ -155,18 +177,12 @@ initial equation
   end if;
 equation
 
-  connect(G_w_val.y, R_w.Gc) annotation (Line(
-      points={{-18.5,50},{-12,50},{-12,34}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(R_w.fluid, vol.heatPort) annotation (Line(
-      points={{-22,24},{-34,24},{-34,10},{-44,10}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(R_w.solid, heatPortEmb) annotation (Line(
-      points={{-2,24},{-2,100},{0,100}},
-      color={191,0,0},
-      smooth=Smooth.None));
+  if useSimplifiedRt then
+    R_t = IDEAS.Utilities.Math.Functions.inverseXRegularized(2*m_flowSpLimit*cp_default, 1e-8) + R_w_val + R_r_val + R_x_val;
+  else
+    R_t = IDEAS.Utilities.Math.Functions.inverseXRegularized(m_flowSpLimit*cp_default*(1-exp(-1/((R_w_val+R_r_val+R_x_val+R_c)*m_flowSpLimit*cp_default))), 1e-8)-R_c;
+  end if;
+
   connect(res.port_a, vol.ports[2]) annotation (Line(
       points={{20,0},{-54,0}},
       color={0,127,255},
@@ -174,6 +190,30 @@ equation
   connect(res.port_b, port_b) annotation (Line(
       points={{40,0},{100,0}},
       color={0,127,255},
+      smooth=Smooth.None));
+  connect(heatFlowSolid.port, heatPortEmb) annotation (Line(
+      points={{-20,80},{0,80},{0,100}},
+      color={191,0,0},
+      smooth=Smooth.None));
+  connect(heatFlowWater.port, vol.heatPort) annotation (Line(
+      points={{-20,40},{-20,10},{-44,10}},
+      color={191,0,0},
+      smooth=Smooth.None));
+  connect(senTemIn.port, port_a) annotation (Line(
+      points={{-100,20},{-100,0}},
+      color={0,127,255},
+      smooth=Smooth.None));
+  connect(Q.y, heatFlowSolid.Q_flow) annotation (Line(
+      points={{-70.6,60},{-60,60},{-60,80},{-40,80}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(negate.y, heatFlowWater.Q_flow) annotation (Line(
+      points={{-47.6,40},{-40,40}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(negate.u, heatFlowSolid.Q_flow) annotation (Line(
+      points={{-56.8,40},{-60,40},{-60,80},{-40,80}},
+      color={0,0,127},
       smooth=Smooth.None));
   annotation (
     Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
