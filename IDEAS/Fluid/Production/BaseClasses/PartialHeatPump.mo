@@ -217,8 +217,7 @@ public
         rotation=90,
         origin={60,-10})));
 
-  outer Modelica.Fluid.System system
-    annotation (Placement(transformation(extent={{80,-100},{100,-80}})));
+
 protected
   parameter MediumBrine.ThermodynamicState state_default_brine = MediumBrine.setState_pTX(MediumBrine.p_default, MediumBrine.T_default, MediumBrine.X_default);
   parameter MediumFluid.ThermodynamicState state_default_fluid = MediumFluid.setState_pTX(MediumFluid.p_default, MediumFluid.T_default, MediumFluid.X_default);

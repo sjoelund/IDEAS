@@ -93,8 +93,7 @@ public
         extent={{-10,-10},{10,10}},
         rotation=90,
         origin={0,-102})));
-  outer Modelica.Fluid.System system
-  annotation (Placement(transformation(extent={{-180,80},{-160,100}})));
+
 equation
   if nLoads >= 1 then
     connect(wattsLawPlug.vi, plugLoad) annotation (Line(

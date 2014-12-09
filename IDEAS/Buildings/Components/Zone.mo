@@ -6,8 +6,7 @@ model Zone "thermal building zone"
       Medium =
         IDEAS.Media.Air);
 
-  outer Modelica.Fluid.System system
-    annotation (Placement(transformation(extent={{-80,80},{-60,100}})));
+
 
   parameter Modelica.SIunits.Volume V "Total zone air volume";
   parameter Real n50(min=0.01)=0.4
@@ -74,7 +73,7 @@ public
     annotation (Placement(transformation(extent={{10,90},{30,110}})));
   Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor senTem
     annotation (Placement(transformation(extent={{0,-28},{-16,-12}})));
-  parameter Boolean allowFlowReversal=system.allowFlowReversal
+  parameter Boolean allowFlowReversal=true
     "= true to allow flow reversal in zone, false restricts to design direction (port_a -> port_b)."
     annotation(Dialog(tab="Assumptions"));
 equation

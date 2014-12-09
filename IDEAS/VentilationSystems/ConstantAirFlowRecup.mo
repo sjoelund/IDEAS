@@ -53,8 +53,7 @@ model ConstantAirFlowRecup
     annotation (Placement(transformation(extent={{-160,-10},{-180,-30}})));
   Modelica.Blocks.Sources.RealExpression realExpression(y=sim.Te)
     annotation (Placement(transformation(extent={{-50,-26},{-70,-6}})));
-  outer Modelica.Fluid.System system
-    annotation (Placement(transformation(extent={{80,-100},{100,-80}})));
+
 equation
   P[1:nLoads_min] = sum(n .* VZones/3600)*sysPres/fanEff/motEff / nLoads_min .*ones(nLoads_min);
   Q[1:nLoads_min] = zeros(nLoads_min);

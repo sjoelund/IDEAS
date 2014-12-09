@@ -4,8 +4,7 @@ partial model VentilationSystem
   outer IDEAS.SimInfoManager sim
     "Simulation information manager for climate data"
     annotation (Placement(transformation(extent={{-200,80},{-180,100}})));
-  outer Modelica.Fluid.System system
-  annotation (Placement(transformation(extent={{-180,80},{-160,100}})));
+
 
   replaceable package Medium = IDEAS.Media.Air
     constrainedby Modelica.Media.Interfaces.PartialMedium

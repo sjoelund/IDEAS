@@ -60,8 +60,7 @@ model SingleBoreHoleSerStepLoadScript "SingleBoreHoleSer with step input load "
     m_flow_nominal=gen.m_flow_nominal_bh,
     T_start=gen.T_start) "temperature at the outlet of the borefield"
     annotation (Placement(transformation(extent={{40,-16},{56,0}})));
-  inner Modelica.Fluid.System system
-    annotation (Placement(transformation(extent={{80,80},{100,100}})));
+
 equation
   connect(hea.port_a, sin.ports[1]) annotation (Line(
       points={{30,30},{66,30},{66,4},{34,4}},
