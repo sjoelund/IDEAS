@@ -1,0 +1,14 @@
+simulateModel("IDEAS.Fluid.HeatExchangers.RadiantSlab.Examples.TabsValidation", stopTime=72000, method="dassl", resultFile="TabsValidation");
+
+createPlot(id=1, 
+position={0, 0, 1385, 701}, 
+y={"thermalResistor2.port_b.T", "Tsurface.y[1]", "Tcore.y[1]", "embeddedPipe.heatPortEmb[1].T", "boundary.T", "fixedTemperature.T"}, 
+range={0.0, 72000.0, 292.5, 303.5}, autoscale=false, 
+grid=true, 
+filename="TabsValidation.mat", 
+leftTitleType=1, 
+bottomTitleType=1, 
+colors={{0,0,255}, {255,0,0}, {0,128,0}, {255,0,255}, {0,0,0}, {0,0,255}}, 
+markers={MarkerStyle.None, MarkerStyle.None, MarkerStyle.None, MarkerStyle.None, MarkerStyle.None, MarkerStyle.Cross});
+
+
